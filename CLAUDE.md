@@ -54,7 +54,7 @@ src/
 
 ## AI-DLC workflow
 
-Tickets can be shipped by a fixed pipeline of Claude Code subagents (`.claude/agents/`), orchestrated by the `ship-ticket` skill (`.claude/skills/ship-ticket/SKILL.md`).
+Tickets can be shipped by a fixed pipeline of Claude Code subagents (`.claude-disabled/agents/`), orchestrated by the `ship-ticket` skill (`.claude-disabled/skills/ship-ticket/SKILL.md`).
 
 | Agent | Tools | Job |
 | --- | --- | --- |

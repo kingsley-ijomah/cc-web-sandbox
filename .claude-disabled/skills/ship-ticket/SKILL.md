@@ -6,7 +6,7 @@ argument-hint: "<ticket-id>: <description>"
 
 # /ship-ticket
 
-Runs one ticket through the subagents in `.claude/agents/`: **planner → implementer → tester → reviewer**. You (the main session) orchestrate. The subagents do the work. Don't do their work yourself.
+Runs one ticket through the subagents in `.claude-disabled/agents/`: **planner → implementer → tester → reviewer**. You (the main session) orchestrate. The subagents do the work. Don't do their work yourself.
 
 Input: `$ARGUMENTS`, in the form `<ticket-id>: <description>`.
 
