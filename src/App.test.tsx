@@ -161,4 +161,120 @@ describe('Mini Ticket Board', () => {
     expect(heading('In Progress', 0)).toBeInTheDocument()
     expect(heading('Done', 2)).toBeInTheDocument()
   })
+
+  describe('TICK-2: clear all done tickets', () => {
+    const clearName = 'Clear all done tickets'
+    const seed: Ticket[] = [
+      { id: '1', title: 'Todo A', description: '', status: 'todo' },
+      { id: '2', title: 'Doing B', description: '', status: 'in-progress' },
+      { id: '3', title: 'Done C', description: '', status: 'done' },
+      { id: '4', title: 'Done D', description: '', status: 'done' },
+    ]
+
+    function renderSeeded(tickets: Ticket[] = seed) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets))
+      return render(<App />)
+    }
+
+    function titlesIn(name: string) {
+      return within(column(name))
+        .queryAllByRole('listitem')
+        .map((li) => li.getAttribute('aria-label'))
+    }
+
+    it('AC1: shows the clear button in Done when it has tickets', () => {
+      renderSeeded()
+
+      expect(within(column('Done')).getByRole('button', { name: clearName })).toBeInTheDocument()
+    })
+
+    it('AC1: shows the clear button after a ticket is moved into Done', async () => {
+      render(<App />)
+      const user = await addTicket('Ship it')
+      await user.click(within(column('To Do')).getByRole('button', { name: /In Progress/ }))
+      expect(screen.queryByRole('button', { name: clearName })).not.toBeInTheDocument()
+
+      await user.click(within(column('In Progress')).getByRole('button', { name: /Done/ }))
+      expect(within(column('Done')).getByRole('button', { name: clearName })).toBeInTheDocument()
+    })
+
+    it('AC2: does not show the clear button in other columns', () => {
+      renderSeeded()
+
+      expect(within(column('To Do')).queryByRole('button', { name: clearName })).toBeNull()
+      expect(within(column('In Progress')).queryByRole('button', { name: clearName })).toBeNull()
+      expect(screen.getAllByRole('button', { name: clearName })).toHaveLength(1)
+    })
+
+    it('AC3: hides the clear button when Done is empty', async () => {
+      render(<App />)
+      expect(screen.queryByRole('button', { name: clearName })).toBeNull()
+
+      const user = await addTicket('Only todo')
+      expect(screen.queryByRole('button', { name: clearName })).toBeNull()
+
+      await user.click(within(column('To Do')).getByRole('button', { name: /In Progress/ }))
+      expect(within(column('In Progress')).getByText('Only todo')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: clearName })).toBeNull()
+    })
+
+    it('AC3: hides the clear button when the last done ticket is deleted', async () => {
+      const user = userEvent.setup()
+      renderSeeded([{ id: '1', title: 'Lone done', description: '', status: 'done' }])
+
+      const card = screen.getByRole('listitem', { name: 'Lone done' })
+      await user.click(within(card).getByRole('button', { name: 'Delete' }))
+
+      expect(screen.queryByRole('button', { name: clearName })).toBeNull()
+    })
+
+    it('AC4: clears only done tickets', async () => {
+      const user = userEvent.setup()
+      renderSeeded([
+        { id: '1', title: 'Todo A', description: '', status: 'todo' },
+        { id: '5', title: 'Todo E', description: '', status: 'todo' },
+        { id: '3', title: 'Done C', description: '', status: 'done' },
+        { id: '2', title: 'Doing B', description: '', status: 'in-progress' },
+        { id: '4', title: 'Done D', description: '', status: 'done' },
+        { id: '6', title: 'Doing F', description: '', status: 'in-progress' },
+      ])
+
+      await user.click(within(column('Done')).getByRole('button', { name: clearName }))
+
+      expect(screen.queryByText('Done C')).not.toBeInTheDocument()
+      expect(screen.queryByText('Done D')).not.toBeInTheDocument()
+      expect(titlesIn('To Do')).toEqual(['Todo A', 'Todo E'])
+      expect(titlesIn('In Progress')).toEqual(['Doing B', 'Doing F'])
+      expect(heading('To Do', 2)).toBeInTheDocument()
+      expect(heading('In Progress', 2)).toBeInTheDocument()
+      expect(heading('Done', 0)).toBeInTheDocument()
+      expect(within(column('Done')).getByText('No tickets')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: clearName })).toBeNull()
+    })
+
+    it('AC5: persists the cleared board', async () => {
+      const user = userEvent.setup()
+      renderSeeded()
+
+      await user.click(within(column('Done')).getByRole('button', { name: clearName }))
+
+      const stored: Ticket[] = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
+      expect(stored).toHaveLength(2)
+      expect(stored.some((t) => t.status === 'done')).toBe(false)
+      expect(stored).toEqual([seed[0], seed[1]])
+    })
+
+    it('AC5: the cleared board survives a reload', async () => {
+      const user = userEvent.setup()
+      const { unmount } = renderSeeded()
+
+      await user.click(within(column('Done')).getByRole('button', { name: clearName }))
+      unmount()
+      render(<App />)
+
+      expect(heading('Done', 0)).toBeInTheDocument()
+      expect(within(column('To Do')).getByText('Todo A')).toBeInTheDocument()
+      expect(within(column('In Progress')).getByText('Doing B')).toBeInTheDocument()
+    })
+  })
 })
