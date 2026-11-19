@@ -69,6 +69,10 @@ button.danger {
   color: var(--danger);
 }
 
+.clear-done {
+  margin-top: 12px;
+}
+
 .board {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

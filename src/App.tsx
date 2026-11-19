@@ -23,6 +23,10 @@ export default function App() {
     setTickets((prev) => prev.filter((t) => t.id !== id))
   }
 
+  function clearDone() {
+    setTickets((prev) => prev.filter((t) => t.status !== 'done'))
+  }
+
   return (
     <main className="app">
       <h1>Mini Ticket Board</h1>
@@ -35,6 +39,7 @@ export default function App() {
             tickets={tickets.filter((t) => t.status === col.status)}
             onMove={moveTicket}
             onDelete={deleteTicket}
+            onClear={col.status === 'done' ? clearDone : undefined}
           />
         ))}
       </div>

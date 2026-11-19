@@ -6,9 +6,10 @@ interface Props {
   tickets: Ticket[]
   onMove: (id: string, status: Status) => void
   onDelete: (id: string) => void
+  onClear?: () => void
 }
 
-export function Column({ label, tickets, onMove, onDelete }: Props) {
+export function Column({ label, tickets, onMove, onDelete, onClear }: Props) {
   return (
     <section className="column" aria-label={label}>
       <h2>
@@ -22,6 +23,11 @@ export function Column({ label, tickets, onMove, onDelete }: Props) {
             <TicketCard key={t.id} ticket={t} onMove={onMove} onDelete={onDelete} />
           ))}
         </ul>
+      )}
+      {onClear && tickets.length > 0 && (
+        <button type="button" className="danger clear-done" onClick={onClear}>
+          Clear all done tickets
+        </button>
       )}
     </section>
   )
