@@ -8,6 +8,10 @@ function column(name: string) {
   return screen.getByRole('region', { name })
 }
 
+function heading(name: string, count: number) {
+  return within(column(name)).getByRole('heading', { level: 2, name: `${name} ${count}` })
+}
+
 async function addTicket(title: string, description = '') {
   const user = userEvent.setup()
   await user.type(screen.getByLabelText('Title'), title)
@@ -100,5 +104,61 @@ describe('Mini Ticket Board', () => {
 
     expect(screen.queryAllByRole('listitem')).toHaveLength(0)
     expect(screen.getAllByText('No tickets')).toHaveLength(3)
+  })
+
+  it('AC1: shows a zero count in every column on an empty board', () => {
+    render(<App />)
+
+    expect(heading('To Do', 0)).toBeInTheDocument()
+    expect(heading('In Progress', 0)).toBeInTheDocument()
+    expect(heading('Done', 0)).toBeInTheDocument()
+  })
+
+  it('AC2: counts added tickets in To Do', async () => {
+    render(<App />)
+    await addTicket('First')
+    await addTicket('Second')
+
+    expect(heading('To Do', 2)).toBeInTheDocument()
+    expect(heading('In Progress', 0)).toBeInTheDocument()
+    expect(heading('Done', 0)).toBeInTheDocument()
+  })
+
+  it('AC3: updates counts when a ticket moves', async () => {
+    render(<App />)
+    const user = await addTicket('First')
+    await addTicket('Second')
+
+    const card = within(column('To Do')).getByRole('listitem', { name: 'First' })
+    await user.click(within(card).getByRole('button', { name: /In Progress/ }))
+
+    expect(heading('To Do', 1)).toBeInTheDocument()
+    expect(heading('In Progress', 1)).toBeInTheDocument()
+  })
+
+  it('AC4: decrements the count when a ticket is deleted', async () => {
+    render(<App />)
+    const user = await addTicket('First')
+    await addTicket('Second')
+
+    const card = screen.getByRole('listitem', { name: 'Second' })
+    await user.click(within(card).getByRole('button', { name: 'Delete' }))
+
+    expect(heading('To Do', 1)).toBeInTheDocument()
+  })
+
+  it('AC5: counts tickets restored from localStorage', () => {
+    const saved: Ticket[] = [
+      { id: '1', title: 'Saved todo', description: '', status: 'todo' },
+      { id: '2', title: 'Saved done', description: '', status: 'done' },
+      { id: '3', title: 'Another done', description: '', status: 'done' },
+    ]
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved))
+
+    render(<App />)
+
+    expect(heading('To Do', 1)).toBeInTheDocument()
+    expect(heading('In Progress', 0)).toBeInTheDocument()
+    expect(heading('Done', 2)).toBeInTheDocument()
   })
 })
